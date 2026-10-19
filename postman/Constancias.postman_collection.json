@@ -1,0 +1,1164 @@
+{
+  "info": {
+    "_postman_id": "758e89cb-6c7c-49eb-a624-9b928bfd9936",
+    "name": "Constancias - Emilio Aguirre",
+    "description": "Peticiones de la Unidad 2: autenticación, permisos, inscripción, solicitud y pagos. Ejemplos con fines prácticos. El documento y el correo se representan mediante texto y logger.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseURL",
+      "value": "http://localhost:8080/api/v1"
+    },
+    {
+      "key": "matricula",
+      "value": "202360079"
+    },
+    {
+      "key": "contrasena",
+      "value": "practica123"
+    },
+    {
+      "key": "controlUsuario",
+      "value": "control"
+    },
+    {
+      "key": "controlContrasena",
+      "value": "control123"
+    },
+    {
+      "key": "idInscripcion",
+      "value": ""
+    },
+    {
+      "key": "idSolicitud",
+      "value": ""
+    },
+    {
+      "key": "idPago",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Registrar estudiante",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/estudiantes",
+        "description": "Registra a Emilio Alejandro Aguirre Tronco con matrícula 202360079 y correo UCC. La contraseña es de demostración; la respuesta no la incluye.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"matricula\": \"{{matricula}}\",\n  \"nombre\": \"Emilio Alejandro Aguirre Tronco\",\n  \"correo\": \"202360079@ucc.mx\",\n  \"activo\": false,\n  \"contrasena\": \"{{contrasena}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Registro disponible\", function () { pm.expect([201,409]).to.include(pm.response.code); });",
+              "pm.test(\"Datos del registro\", function () { if (pm.response.code === 201) { pm.expect(pm.response.json().matricula).to.eql(pm.collectionVariables.get(\"matricula\")); pm.expect(pm.response.json().nombre).to.eql(\"Emilio Alejandro Aguirre Tronco\"); } });",
+              "pm.test(\"Contraseña privada\", function () { pm.expect(pm.response.json()).not.to.have.property(\"contrasena\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Autenticar estudiante",
+      "request": {
+        "method": "GET",
+        "url": "{{baseURL}}/estudiantes/autenticar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "description": "Autentica la matrícula y contraseña mediante HTTP Basic. Devuelve la matrícula del usuario."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Usuario autenticado\", function () { pm.expect(pm.response.text()).to.eql(pm.collectionVariables.get(\"matricula\")); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Rechazar consulta sin credenciales",
+      "request": {
+        "method": "GET",
+        "url": "{{baseURL}}/solicitudes",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "description": "Rechaza la consulta de solicitudes cuando no se envían credenciales.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Rechazar contraseña incorrecta",
+      "request": {
+        "method": "GET",
+        "url": "{{baseURL}}/estudiantes/autenticar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "description": "Rechaza una contraseña incorrecta para la matrícula registrada.",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{matricula}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "incorrecta",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Listar estudiantes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/estudiantes",
+        "description": "Consulta los estudiantes almacenados en MySQL."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Lista de estudiantes\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Consultar estudiante por matrícula",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/estudiantes/{{matricula}}",
+        "description": "Obtiene al estudiante por su matrícula."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Matrícula recuperada\", () => pm.expect(pm.response.json().matricula).to.eql(pm.collectionVariables.get(\"matricula\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Registrar inscripción",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/inscripciones",
+        "description": "Relaciona al estudiante registrado con una inscripción activa en el periodo 2026-2.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estudiante\": {\n    \"matricula\": \"{{matricula}}\"\n  },\n  \"periodo\": \"2026-2\",\n  \"activo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{controlUsuario}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{controlContrasena}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+              "pm.collectionVariables.set(\"idInscripcion\", pm.response.json().id);",
+              "pm.test(\"Inscripción activa\", () => pm.expect(pm.response.json().activo).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Listar inscripciones",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/inscripciones",
+        "description": "Consulta las inscripciones y sus estudiantes."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Lista de inscripciones\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Consultar inscripción por ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/inscripciones/{{idInscripcion}}",
+        "description": "Recupera la inscripción recién registrada mediante su identificador."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Periodo recuperado\", () => pm.expect(pm.response.json().periodo).to.eql(\"2026-2\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Rechazar inscripción de estudiante",
+      "request": {
+        "method": "POST",
+        "url": "{{baseURL}}/inscripciones",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "El estudiante no puede registrar inscripciones. Esta operación corresponde a Control Escolar.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estudiante\": {\n    \"matricula\": \"{{matricula}}\"\n  },\n  \"periodo\": \"2026-2\",\n  \"activo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Rechazar solicitud para otra matrícula",
+      "request": {
+        "method": "POST",
+        "url": "{{baseURL}}/solicitudes",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "Comprueba los permisos: el usuario no puede solicitar una constancia para otra matrícula.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estudiante\": {\n    \"matricula\": \"209900002\"\n  },\n  \"periodo\": \"2026-2\",\n  \"importe\": 150\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Registrar solicitud",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes",
+        "description": "Verifica la inscripción del periodo y registra una solicitud de 150.00. Sus estados iniciales son pagada, generada y enviada en false.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estudiante\": {\n    \"matricula\": \"{{matricula}}\"\n  },\n  \"periodo\": \"2026-2\",\n  \"importe\": 150.0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+              "pm.collectionVariables.set(\"idSolicitud\", pm.response.json().id);",
+              "pm.test(\"Estados iniciales\", function () { const d=pm.response.json(); pm.expect(d.pagada).to.eql(false); pm.expect(d.generada).to.eql(false); pm.expect(d.enviada).to.eql(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Listar solicitudes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes",
+        "description": "Lista las solicitudes registradas y sus estados."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Lista de solicitudes\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Consultar solicitud pendiente",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/{{idSolicitud}}",
+        "description": "Consulta el importe y el estado pendiente antes de registrar pagos."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Sin pago completo\", () => pm.expect(pm.response.json().pagada).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Rechazar generación sin pago",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/{{idSolicitud}}/generar",
+        "description": "La generación se rechaza porque la solicitud todavía no está pagada."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Rechazar envío sin documento",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/{{idSolicitud}}/enviar",
+        "description": "El envío se rechaza porque la constancia aún no está generada."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Rechazar solicitud sin inscripción",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes",
+        "description": "Rechaza el trámite porque no existe una inscripción activa para el periodo 2025-1.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estudiante\": {\n    \"matricula\": \"{{matricula}}\"\n  },\n  \"periodo\": \"2025-1\",\n  \"importe\": 150.0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Rechazar pago sin solicitud",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Comprueba que todo pago debe indicar el ID de una solicitud existente.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": 50,\n  \"tipo\": \"EFECTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+              "pm.test(\"Motivo del rechazo\", function () { pm.expect(pm.response.json().message).to.include(\"SOLICITUD_NO_INDICADA\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Rechazar monto inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Rechaza un monto igual a cero. El monto del pago debe ser positivo.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 0,\n  \"tipo\": \"EFECTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+              "pm.test(\"Motivo del rechazo\", function () { pm.expect(pm.response.json().message).to.include(\"MONTO_INVALIDO\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Rechazar tipo inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Rechaza un tipo ajeno a DEBITO, CREDITO, EFECTIVO y OTRO.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 50,\n  \"tipo\": \"CHEQUE\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Rechazar monto superior",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Rechaza un pago de 200.00 porque supera el importe de 150.00 de la solicitud.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 200,\n  \"tipo\": \"EFECTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+              "pm.test(\"Motivo del rechazo\", function () { pm.expect(pm.response.json().message).to.include(\"MONTO_SUPERIOR\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. Registrar abono parcial",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Registra un abono de 50.00. Como faltan 100.00, la solicitud continúa pendiente y aún no se genera ni se envía el documento.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 50,\n  \"tipo\": \"DEBITO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+              "pm.collectionVariables.set(\"idPago\", pm.response.json().id);",
+              "pm.test(\"Abono registrado\", () => pm.expect(pm.response.json().monto).to.eql(50));",
+              "pm.test(\"Fecha automática\", () => pm.expect(pm.response.json().fecha).to.be.a(\"string\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23. Listar pagos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Consulta los abonos almacenados y la solicitud a la que pertenecen."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Lista de pagos\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24. Consultar pago por ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos/{{idPago}}",
+        "description": "Obtiene el pago parcial mediante su identificador."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Tipo registrado\", () => pm.expect(pm.response.json().tipo).to.eql(\"DEBITO\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25. Rechazar abono superior al saldo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Con 50.00 ya abonados, este pago llevaría el total a 170.00 y se rechaza para no superar el importe.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 120,\n  \"tipo\": \"EFECTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+              "pm.test(\"Motivo del rechazo\", function () { pm.expect(pm.response.json().message).to.include(\"MONTO_SUPERIOR\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26. Completar pago del trámite",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Completa 150.00 con el segundo abono. Marca la solicitud como pagada y publica PagoConfirmado; la generación y el envío se procesan después del commit.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 100,\n  \"tipo\": \"EFECTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+              "pm.test(\"Pago completo\", () => pm.expect(pm.response.json().solicitud.pagada).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27. Consultar constancia generada y enviada",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/{{idSolicitud}}",
+        "description": "Confirma mediante una nueva consulta los estados pagada, generada y enviada en true, además del texto de la constancia. El correo está simulado mediante logger."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Proceso completo\", function () { const d=pm.response.json(); pm.expect(d.pagada).to.eql(true); pm.expect(d.generada).to.eql(true); pm.expect(d.enviada).to.eql(true); pm.expect(d.documento).to.include(\"2026-2\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28. Rechazar pago de solicitud ya pagada",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos",
+        "description": "Evita registrar otro pago cuando la solicitud ya cubrió su importe total.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"solicitud\": {\n    \"id\": \"{{idSolicitud}}\"\n  },\n  \"monto\": 1,\n  \"tipo\": \"EFECTIVO\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", function () { pm.response.to.have.status(409); });",
+              "pm.test(\"Motivo del rechazo\", function () { pm.expect(pm.response.json().message).to.include(\"SOLICITUD_YA_PAGADA\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29. Consultar solicitud inexistente",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/999999999",
+        "description": "Devuelve 404 cuando no existe el identificador de solicitud consultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30. Consultar pago inexistente",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/pagos/999999999",
+        "description": "Devuelve 404 cuando no existe el pago consultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31. Consultar generación existente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/{{idSolicitud}}/generar",
+        "description": "Devuelve la constancia ya generada sin reemplazar su contenido."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Documento conservado\", () => pm.expect(pm.response.json().generada).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32. Consultar envío existente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseURL}}/solicitudes/{{idSolicitud}}/enviar",
+        "description": "Conserva el estado de envío de una solicitud ya atendida sin repetir el aviso por consola."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Envío conservado\", () => pm.expect(pm.response.json().enviada).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{matricula}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{contrasena}}",
+        "type": "string"
+      }
+    ]
+  }
+}
